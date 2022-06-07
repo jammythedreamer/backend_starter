@@ -1,0 +1,34 @@
+name: Deploy to EB
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: install typescript
+      run: npm install typescript
+    
+    - name: tsc
+      run: tsc
+
+    - name: generate deployment pacakge
+      run: zip -r deploy.zip . -x './mysql/*' './src/*' './node_modules/*' './.git/*' './.github/*' .gitignore .dockignore docker-compose.yml Dockerfile.dev nodemon.json
+
+    - name: Deploy to elastic beanstalk
+      uses: einaregilsson/beanstalk-deploy@v14
+      with: 
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: app-name
+        environment_name: app-name-env
+        region: ap-northeast-2
+        version_label: ${{ github.run_number }}
+        deployment_package: deploy.zip
+        use_existing_version_if_available: true
